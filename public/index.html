@@ -88,7 +88,6 @@ td.r,th.r{text-align:right}
 button.del{padding:3px 9px;font-size:12px;color:var(--muted)}
 button.del.sure{color:var(--bad);border-color:var(--bad)}
 .foot{font-size:12px;color:var(--muted);max-width:75ch}
-.demo{border:1px dashed var(--muted);color:var(--muted);padding:7px 10px;border-radius:6px;font-size:13px}
 .note{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:10px 12px;border-radius:8px;font-size:13px}
 .note>span{min-width:0}
 .note-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -142,7 +141,6 @@ button.del.sure{color:var(--bad);border-color:var(--bad)}
           <text id="svgScore" x="120" y="152" text-anchor="middle" font-family="Newsreader, Georgia, serif" font-weight="600" font-size="68" fill="#fff"></text>
         </g>
       </svg>
-      <div class="demo" id="demoTag" hidden>Exemplo com valores fictícios. Salve o seu primeiro resultado para começar com os seus dados.</div>
       <div class="verdict">
         <div class="score-big num" id="scoreBig">—</div>
         <div>
@@ -228,14 +226,7 @@ button.del.sure{color:var(--bad);border-color:var(--bad)}
     funcao:{nome:"Função (bilirrubina, INR, albumina, plaquetas)",w:.30}
   };
   var rows=[],selEx="TGP",selDate=null;
-  /* valores fictícios, só para mostrar o painel funcionando antes do primeiro registro */
-  var DEMO=[];
-  [["2026-01-15",{TGO:88,TGP:120,GGT:210,FA:190,BT:1.4}],
-   ["2026-04-10",{TGO:70,TGP:95,GGT:150,FA:150,BT:1.1}],
-   ["2026-07-08",{TGO:52,TGP:64,GGT:96,FA:120,BT:0.9,INR:1.0,ALB:4.3,PLQ:240}]
-  ].forEach(function(x){Object.keys(x[1]).forEach(function(k){DEMO.push({exame:k,data:x[0],valor:x[1][k]})})});
-  function src(){return rows.length?rows:DEMO}
-  function isDemo(){return !rows.length}
+  function src(){return rows}
   var $=function(id){return document.getElementById(id)};
 
   function fmt(n){return Number(n).toLocaleString("pt-BR",{maximumFractionDigits:2})}
@@ -291,7 +282,8 @@ button.del.sure{color:var(--bad);border-color:var(--bad)}
       $("stateTxt").textContent="Nenhum exame registrado ainda";
       $("stateSub").textContent="Adicione um resultado no formulário abaixo para colorir o fígado.";
       $("cover").textContent="";
-      $("bars").textContent="";$("markers").textContent="";return;
+      var bb=$("bars");bb.textContent="";var p1=document.createElement("p");p1.style.cssText="color:var(--muted);font-size:13px;margin:0";p1.textContent="Sem dados: os grupos do índice aparecem aqui depois do primeiro registro.";bb.appendChild(p1);
+      $("markers").textContent="";return;
     }
     var t=e.total;
     $("gs1").setAttribute("stop-color",scoreColor(t));$("gs2").setAttribute("stop-color",scoreColor2(t));
@@ -385,7 +377,7 @@ button.del.sure{color:var(--bad);border-color:var(--bad)}
         if(armed!==id){armed=id;renderTable();return}
         armed=null;remove(p);
       });
-      if(!isDemo())c4.appendChild(b);
+      c4.appendChild(b);
       [c1,c2,c3,c4].forEach(function(c){tr.appendChild(c)});tb.appendChild(tr);
     });
   }
@@ -394,7 +386,7 @@ button.del.sure{color:var(--bad);border-color:var(--bad)}
     var e=EX[selEx];$("refTxt").textContent=refTxt(selEx);
     $("valLabel").textContent="Resultado"+(e.un?" ("+e.un+")":"");
   }
-  function renderAll(){$("demoTag").hidden=!isDemo();renderDates();renderLiver();renderChart();renderTable();renderForm()}
+  function renderAll(){renderDates();renderLiver();renderChart();renderTable();renderForm()}
 
   /* armazenamento */
   function saveLocal(){try{localStorage.setItem("painel-figado",JSON.stringify(rows));return true}catch(e){return false}}
