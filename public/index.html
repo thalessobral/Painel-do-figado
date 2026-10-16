@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Painel do Fígado Modelo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+/* Layout: ilustração do fígado à esquerda com o índice; marcadores e subíndices à direita; registro, gráfico e histórico abaixo. */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --fg:#14211D; --muted:#566660; --line:#D2DBD7;
+  --accent:#1F6B57; --accent-fg:#FFFFFF; --band:rgba(31,107,87,.10);
+  --ok:#1D7A4D; --warn:#9A6200; --bad:#B0342A; --bile:#3E8E5F; --bile-edge:#2A6A43;
+  --liver-edge:rgba(20,33,29,.45); --track:#DCE4E0;
+  --f-display:"Newsreader",Georgia,serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1412; --surface:#16201C; --fg:#E5EEEA; --muted:#92A59D; --line:#2A3832;
+  --accent:#5FC2A5; --accent-fg:#0B1512; --band:rgba(95,194,165,.12);
+  --ok:#5FCF98; --warn:#E6B450; --bad:#F08A7C; --bile:#4FA374; --bile-edge:#7BD1A0;
+  --liver-edge:rgba(229,238,234,.35); --track:#27342E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1412; --surface:#16201C; --fg:#E5EEEA; --muted:#92A59D; --line:#2A3832;
+  --accent:#5FC2A5; --accent-fg:#0B1512; --band:rgba(95,194,165,.12);
+  --ok:#5FCF98; --warn:#E6B450; --bad:#F08A7C; --bile:#4FA374; --bile-edge:#7BD1A0;
+  --liver-edge:rgba(229,238,234,.35); --track:#27342E; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-family:var(--f-display);font-weight:600;font-size:clamp(28px,5vw,38px);letter-spacing:-.01em;line-height:1.1}
+h2{font-family:var(--f-display);font-weight:600;font-size:22px}
+.sub{color:var(--muted);margin:6px 0 0;max-width:60ch}
+.label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.banner{border:1px solid var(--warn);color:var(--warn);padding:8px 12px;border-radius:6px;font-size:13px}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start}
+.liver-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.liver-top{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.pick{display:flex;flex-direction:column;gap:4px}
+select,input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.liver{width:100%;height:auto;display:block;max-height:340px}
+.breath{transform-box:fill-box;transform-origin:50% 55%;animation:breath 6s ease-in-out infinite}
+@keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+.verdict{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.score-big{font-family:var(--f-display);font-weight:600;font-size:52px;line-height:1;color:var(--sc,var(--fg))}
+.verdict .state{font-weight:600}
+.small{font-size:13px;color:var(--muted)}
+
+.side{display:flex;flex-direction:column;gap:22px;min-width:0}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.bar-row .track{grid-column:1/-1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.bar-row .fill{height:100%;border-radius:4px;background:var(--c,var(--accent));transition:width .5s}
+.markers{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mk{border-top:2px solid var(--c,var(--line));padding:8px 0 0;min-width:0}
+.mk .v{font-family:var(--f-mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.mk .v small{font-size:11px;color:var(--muted);font-weight:400}
+.mk .n{font-size:13px;font-weight:600}
+.mk .meta{font-size:12px;color:var(--muted)}
+.mk.old .v{opacity:.55}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px}
+
+.work{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:28px;align-items:start}
+.form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--fg);padding:9px 14px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button.primary:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;min-height:19px}
+.msg.err{color:var(--bad)} .msg.good{color:var(--ok)}
+.chart-box{display:flex;flex-direction:column;gap:12px;min-width:0}
+.chart-scroll{overflow-x:auto}
+svg.chart{width:100%;min-width:460px;height:auto;display:block}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:7px 10px;border-bottom:1px solid var(--line)}
+td.r,th.r{text-align:right}
+.chip{font-size:12px;font-weight:600;color:var(--c)}
+button.del{padding:3px 9px;font-size:12px;color:var(--muted)}
+button.del.sure{color:var(--bad);border-color:var(--bad)}
+.foot{font-size:12px;color:var(--muted);max-width:75ch}
+.demo{border:1px dashed var(--muted);color:var(--muted);padding:7px 10px;border-radius:6px;font-size:13px}
+.note{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:10px 12px;border-radius:8px;font-size:13px}
+.note>span{min-width:0}
+.note-actions{display:flex;gap:8px;flex-wrap:wrap}
+.note button{padding:6px 11px;font-size:13px;color:var(--fg)}
+@media (max-width:860px){.hero,.work{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.breath{animation:none}.bar-row .fill{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Painel do Fígado</h1>
+    <p class="sub">Registre cada resultado de exame e veja o fígado mudar de cor conforme os valores se aproximam ou se afastam da referência.</p>
+  </header>
+  <div class="note" id="note">
+    <span>Os seus exames ficam salvos só neste aparelho, dentro do navegador. Para não perder os dados, guarde uma cópia de tempos em tempos.</span>
+    <span class="note-actions">
+      <button type="button" id="btnExp">Exportar cópia</button>
+      <button type="button" id="btnImp">Importar cópia</button>
+      <input type="file" id="fileImp" accept="application/json,.json" hidden>
+    </span>
+  </div>
+
+  <section class="hero" aria-label="Estado atual">
+    <div class="liver-box" id="liverBox">
+      <div class="liver-top">
+        <div class="pick" style="flex:1;min-width:170px;max-width:240px">
+          <label class="label" for="selDate">Estado do fígado em</label>
+          <select id="selDate"></select>
+        </div>
+        <div class="small" id="cover"></div>
+      </div>
+      <svg class="liver" id="liverSvg" viewBox="0 0 400 280" role="img" aria-label="Ilustração de um fígado colorido pelo índice de saúde">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" id="gs1" stop-color="#888"/>
+            <stop offset="1" id="gs2" stop-color="#555"/>
+          </linearGradient>
+        </defs>
+        <g class="breath">
+          <ellipse cx="148" cy="246" rx="15" ry="25" transform="rotate(28 148 246)" fill="var(--bile)" stroke="var(--bile-edge)" stroke-width="2"/>
+          <path d="M24,128 C20,70 96,26 196,26 C284,26 364,52 378,104 C386,134 362,152 322,160 C284,168 262,196 228,224 C192,252 128,254 84,222 C46,194 28,164 24,128 Z" fill="url(#lg)" stroke="var(--liver-edge)" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M214,32 C224,76 228,124 216,176" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2.5" stroke-linecap="round"/>
+          <g fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2" stroke-linecap="round">
+            <path d="M318,66 C288,92 262,112 224,132"/>
+            <path d="M344,88 C312,114 282,132 240,148"/>
+            <path d="M92,150 C130,150 170,146 210,140"/>
+          </g>
+          <ellipse cx="118" cy="82" rx="68" ry="24" transform="rotate(-16 118 82)" fill="#fff" opacity=".16"/>
+          <text id="svgScore" x="120" y="152" text-anchor="middle" font-family="Newsreader, Georgia, serif" font-weight="600" font-size="68" fill="#fff"></text>
+        </g>
+      </svg>
+      <div class="demo" id="demoTag" hidden>Exemplo com valores fictícios. Salve o seu primeiro resultado para começar com os seus dados.</div>
+      <div class="verdict">
+        <div class="score-big num" id="scoreBig">—</div>
+        <div>
+          <div class="state" id="stateTxt">Nenhum exame registrado ainda</div>
+          <div class="small" id="stateSub">Adicione um resultado no formulário abaixo para colorir o fígado.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div>
+        <div class="label" style="margin-bottom:10px">Índice por grupo (0 a 100)</div>
+        <div class="bars" id="bars"></div>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:10px">Último valor de cada marcador até a data</div>
+        <div class="markers" id="markers"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="work" aria-label="Registro e evolução">
+    <form class="form" id="form" autocomplete="off">
+      <h2>Registrar exame</h2>
+      <div class="field">
+        <label class="label" for="selEx">Exame</label>
+        <select id="selEx"></select>
+        <span class="small" id="refTxt"></span>
+      </div>
+      <div class="field">
+        <label class="label" for="inDate">Data da coleta</label>
+        <input type="date" id="inDate" required>
+      </div>
+      <div class="field">
+        <label class="label" for="inVal" id="valLabel">Resultado</label>
+        <input type="number" id="inVal" step="any" inputmode="decimal" required>
+      </div>
+      <button class="primary" type="submit" id="btnSave">Salvar resultado</button>
+      <div class="msg" id="msg" role="status"></div>
+    </form>
+
+    <div class="chart-box">
+      <div>
+        <h2 id="chartTitle">Evolução</h2>
+        <div class="small" id="chartSub"></div>
+      </div>
+      <div class="chart-scroll"><svg class="chart" id="chart" viewBox="0 0 640 260" role="img" aria-label="Gráfico da evolução do exame selecionado"></svg></div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Data</th><th class="r">Resultado</th><th>Situação</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">Índice ilustrativo para acompanhar tendências, calculado pela distância de cada valor ao limite de referência (TGO, TGP, GGT, fosfatase, bilirrubina, INR, albumina e plaquetas). Marcadores sem registro não entram na conta. Não é um escore clínico nem diagnóstico; a interpretação é do seu médico. As referências são faixas gerais de adulto e o seu laboratório pode usar outras.</p>
+</div>
+
+<script>
+(function(){
+  var EX={
+    TGO:{nome:"TGO (AST)",un:"U/L",ref:[0,40],dir:"alto",g:"lesao"},
+    TGP:{nome:"TGP (ALT)",un:"U/L",ref:[0,58],dir:"alto",g:"lesao"},
+    GGT:{nome:"GGT",un:"U/L",ref:[0,73],dir:"alto",g:"colestase"},
+    FA:{nome:"Fosfatase alcalina",un:"U/L",ref:[36,110],dir:"alto",g:"colestase"},
+    BT:{nome:"Bilirrubina total",un:"mg/dL",ref:[0,1.2],dir:"alto",g:"funcao"},
+    INR:{nome:"INR",un:"",ref:[0.8,1.2],dir:"alto",g:"funcao"},
+    ALB:{nome:"Albumina",un:"g/dL",ref:[3.5,4.85],dir:"baixo",g:"funcao"},
+    PLQ:{nome:"Plaquetas",un:"mil/mm³",ref:[150,450],dir:"baixo",g:"funcao"},
+    IGM:{nome:"IgM",un:"mg/dL",ref:[40,230],dir:"alto",g:null},
+    FER:{nome:"Ferritina",un:"ng/mL",ref:[22,322],dir:"alto",g:null},
+    GLI:{nome:"Glicose em jejum",un:"mg/dL",ref:[60,99],dir:"alto",g:null},
+    CRE:{nome:"Creatinina",un:"mg/dL",ref:[0.7,1.2],dir:"alto",g:null},
+    URE:{nome:"Ureia",un:"mg/dL",ref:[7,45],dir:"alto",g:null},
+    VITD:{nome:"Vitamina D (25-OH)",un:"ng/mL",ref:[30,60],dir:"baixo",g:null},
+    CAL:{nome:"Cálcio",un:"mg/dL",ref:[8.6,10.3],dir:"alto",g:null}
+  };
+  var ORDER=["TGO","TGP","GGT","FA","BT","INR","ALB","PLQ","IGM","FER","GLI","CRE","URE","VITD","CAL"];
+  var GR={
+    lesao:{nome:"Lesão das células (TGO, TGP)",w:.35},
+    colestase:{nome:"Vias biliares (GGT, fosfatase)",w:.35},
+    funcao:{nome:"Função (bilirrubina, INR, albumina, plaquetas)",w:.30}
+  };
+  var rows=[],selEx="TGP",selDate=null;
+  /* valores fictícios, só para mostrar o painel funcionando antes do primeiro registro */
+  var DEMO=[];
+  [["2026-01-15",{TGO:88,TGP:120,GGT:210,FA:190,BT:1.4}],
+   ["2026-04-10",{TGO:70,TGP:95,GGT:150,FA:150,BT:1.1}],
+   ["2026-07-08",{TGO:52,TGP:64,GGT:96,FA:120,BT:0.9,INR:1.0,ALB:4.3,PLQ:240}]
+  ].forEach(function(x){Object.keys(x[1]).forEach(function(k){DEMO.push({exame:k,data:x[0],valor:x[1][k]})})});
+  function src(){return rows.length?rows:DEMO}
+  function isDemo(){return !rows.length}
+  var $=function(id){return document.getElementById(id)};
+
+  function fmt(n){return Number(n).toLocaleString("pt-BR",{maximumFractionDigits:2})}
+  function fdata(s){var p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0].slice(2)}
+  var MES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  function fmes(s){var p=s.split("-");return MES[+p[1]-1]+"/"+p[0].slice(2)}
+  function ts(s){return new Date(s+"T12:00:00").getTime()}
+  function refTxt(k){var e=EX[k],u=e.un?" "+e.un:"";
+    if(e.ref[0]===0)return "Referência: até "+fmt(e.ref[1])+u;
+    return "Referência: "+fmt(e.ref[0])+" a "+fmt(e.ref[1])+u}
+
+  function pts(k,v){var e=EX[k],r;
+    if(e.dir==="alto"){r=v/e.ref[1];return r<=1?100:Math.max(0,100-20*(r-1))}
+    r=v/e.ref[0];return r>=1?100:Math.max(0,100-200*(1-r))}
+  function sit(k,v){var e=EX[k],r;
+    if(e.dir==="alto"){ if(v<=e.ref[1])return {t:"Dentro da referência",c:"var(--ok)",s:0}; r=v/e.ref[1];
+      return r<2?{t:"Acima ("+fmt(r)+"× o limite)",c:"var(--warn)",s:1}:{t:"Acima ("+fmt(r)+"× o limite)",c:"var(--bad)",s:2}}
+    if(v>=e.ref[0])return {t:"Dentro da referência",c:"var(--ok)",s:0}; r=v/e.ref[0];
+    return r>.8?{t:"Abaixo da referência",c:"var(--warn)",s:1}:{t:"Abaixo da referência",c:"var(--bad)",s:2}}
+  function scoreColor(s){return "hsl("+Math.round(s*1.2)+" 62% 38%)"}
+  function scoreColor2(s){return "hsl("+Math.round(s*1.2)+" 60% 26%)"}
+  function scoreBar(s){return "hsl("+Math.round(s*1.2)+" 58% 42%)"}
+  function estadoTxt(s){return s>=90?"Próximo do normal":s>=75?"Levemente alterado":s>=55?"Moderadamente alterado":"Muito alterado"}
+
+  function latest(k,d){var best=null;
+    src().forEach(function(r){if(r.exame===k&&r.data<=d&&(!best||r.data>best.data))best=r});return best}
+
+  function estado(d){
+    var marc={},gs={},wsum=0,acc=0,n=0;
+    ORDER.forEach(function(k){var r=latest(k,d);if(r){marc[k]=r;if(EX[k].g)n++}});
+    Object.keys(GR).forEach(function(g){var arr=[];
+      ORDER.forEach(function(k){if(EX[k].g===g&&marc[k])arr.push(pts(k,marc[k].valor))});
+      if(arr.length){var m=arr.reduce(function(a,b){return a+b},0)/arr.length;gs[g]=m;acc+=GR[g].w*m;wsum+=GR[g].w}});
+    return {marc:marc,gs:gs,total:wsum?acc/wsum:null,n:n};
+  }
+
+  function renderDates(){
+    var ds=[];src().forEach(function(r){if(ds.indexOf(r.data)<0)ds.push(r.data)});
+    ds.sort().reverse();
+    if(!selDate||ds.indexOf(selDate)<0)selDate=ds[0]||null;
+    var s=$("selDate");s.textContent="";
+    if(!ds.length){var o=document.createElement("option");o.textContent="Sem registros";s.appendChild(o);s.disabled=true;return}
+    s.disabled=false;
+    ds.forEach(function(d){var o=document.createElement("option");o.value=d;o.textContent=fdata(d);if(d===selDate)o.selected=true;s.appendChild(o)});
+  }
+
+  function renderLiver(){
+    var e=selDate?estado(selDate):null;
+    var box=$("liverBox");
+    if(!e||e.total===null){
+      $("gs1").setAttribute("stop-color","#8C9792");$("gs2").setAttribute("stop-color","#5E6A65");
+      $("svgScore").textContent="";$("scoreBig").textContent="—";box.style.removeProperty("--sc");
+      $("stateTxt").textContent="Nenhum exame registrado ainda";
+      $("stateSub").textContent="Adicione um resultado no formulário abaixo para colorir o fígado.";
+      $("cover").textContent="";
+      $("bars").textContent="";$("markers").textContent="";return;
+    }
+    var t=e.total;
+    $("gs1").setAttribute("stop-color",scoreColor(t));$("gs2").setAttribute("stop-color",scoreColor2(t));
+    box.style.setProperty("--sc",scoreBar(t));
+    $("svgScore").textContent=Math.round(t);
+    $("scoreBig").textContent=Math.round(t);
+    $("stateTxt").textContent=estadoTxt(t);
+    $("stateSub").textContent="Em "+fdata(selDate)+", com base em "+e.n+" de 8 marcadores do índice.";
+    $("cover").textContent="";
+    var bars=$("bars");bars.textContent="";
+    Object.keys(GR).forEach(function(g){
+      var row=document.createElement("div");row.className="bar-row";
+      var nm=document.createElement("div");nm.textContent=GR[g].nome;nm.style.fontSize="14px";
+      var vl=document.createElement("div");vl.className="num";
+      var tr=document.createElement("div");tr.className="track";var fl=document.createElement("div");fl.className="fill";tr.appendChild(fl);
+      if(e.gs[g]===undefined){vl.textContent="sem dados";vl.style.color="var(--muted)";fl.style.width="0%"}
+      else{vl.textContent=Math.round(e.gs[g]);fl.style.width=Math.round(e.gs[g])+"%";fl.style.setProperty("--c",scoreBar(e.gs[g]))}
+      row.appendChild(nm);row.appendChild(vl);row.appendChild(tr);bars.appendChild(row);
+    });
+    var mk=$("markers");mk.textContent="";
+    ORDER.forEach(function(k){
+      var r=e.marc[k];var d=document.createElement("div");d.className="mk";
+      var n=document.createElement("div");n.className="n";n.textContent=EX[k].nome;d.appendChild(n);
+      if(!r){d.style.setProperty("--c","var(--line)");
+        var v0=document.createElement("div");v0.className="meta";v0.textContent="sem registro";d.appendChild(v0);mk.appendChild(d);return}
+      var s=sit(k,r.valor);d.style.setProperty("--c",s.c);
+      var age=Math.round((ts(selDate)-ts(r.data))/864e5);if(age>120)d.classList.add("old");
+      var v=document.createElement("div");v.className="v";v.textContent=fmt(r.valor)+" ";
+      var u=document.createElement("small");u.textContent=EX[k].un;v.appendChild(u);d.appendChild(v);
+      var m=document.createElement("div");m.className="meta";
+      m.textContent=fdata(r.data)+(age>0?" (há "+age+" d)":"");d.appendChild(m);
+      var st=document.createElement("div");st.className="meta";var dt=document.createElement("span");dt.className="dot";dt.style.setProperty("--c",s.c);
+      st.appendChild(dt);st.appendChild(document.createTextNode(s.t));d.appendChild(st);
+      mk.appendChild(d);
+    });
+  }
+
+  function niceStep(raw){var p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;
+    return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+
+  function renderChart(){
+    var e=EX[selEx],svg=$("chart");svg.textContent="";
+    $("chartTitle").textContent="Evolução de "+e.nome;
+    $("chartSub").textContent=refTxt(selEx);
+    var NS="http://www.w3.org/2000/svg";
+    function mk(tag,at,txt){var el=document.createElementNS(NS,tag);for(var k in at)el.setAttribute(k,at[k]);if(txt!==undefined)el.textContent=txt;svg.appendChild(el);return el}
+    var data=src().filter(function(r){return r.exame===selEx}).sort(function(a,b){return a.data<b.data?-1:1});
+    var W=640,H=260,m={l:46,r:18,t:20,b:30};
+    if(!data.length){mk("text",{x:W/2,y:H/2,"text-anchor":"middle",fill:"var(--muted)","font-size":14,"font-family":"IBM Plex Sans, sans-serif"},"Sem registros deste exame. Use o formulário para adicionar.");return}
+    var x0=ts(data[0].data),x1=ts(data[data.length-1].data);
+    if(x0===x1){x0-=15*864e5;x1+=15*864e5}
+    var maxv=Math.max.apply(null,data.map(function(d){return d.valor}));
+    var ymax0=Math.max(e.ref[1]*1.15,maxv*1.12);var step=niceStep(ymax0/4);var top=Math.ceil(ymax0/step)*step;
+    var X=function(t){return m.l+(t-x0)/(x1-x0)*(W-m.l-m.r)};
+    var Y=function(v){return H-m.b-(v/top)*(H-m.t-m.b)};
+    mk("rect",{x:m.l,y:Y(e.ref[1]),width:W-m.l-m.r,height:Math.max(1,Y(e.ref[0])-Y(e.ref[1])),fill:"var(--band)"});
+    for(var v=0;v<=top+1e-9;v+=step){
+      mk("line",{x1:m.l,x2:W-m.r,y1:Y(v),y2:Y(v),stroke:"var(--line)","stroke-width":1});
+      mk("text",{x:m.l-8,y:Y(v)+4,"text-anchor":"end",fill:"var(--muted)","font-size":11,"font-family":"IBM Plex Mono, monospace"},fmt(v));
+    }
+    var nt=Math.min(5,data.length),seen={};
+    for(var i=0;i<nt;i++){var idx=nt===1?0:Math.round(i*(data.length-1)/(nt-1));if(seen[idx])continue;seen[idx]=1;
+      mk("text",{x:X(ts(data[idx].data)),y:H-8,"text-anchor":idx===0?"start":idx===data.length-1?"end":"middle",fill:"var(--muted)","font-size":11,"font-family":"IBM Plex Mono, monospace"},fmes(data[idx].data))}
+    if(selDate&&ts(selDate)>=x0&&ts(selDate)<=x1){
+      mk("line",{x1:X(ts(selDate)),x2:X(ts(selDate)),y1:m.t-4,y2:H-m.b,stroke:"var(--muted)","stroke-width":1,"stroke-dasharray":"3 4"});
+    }
+    var d="";data.forEach(function(p,i){d+=(i?"L":"M")+X(ts(p.data)).toFixed(1)+","+Y(p.valor).toFixed(1)});
+    mk("path",{d:d,fill:"none",stroke:"var(--accent)","stroke-width":2,"stroke-linejoin":"round"});
+    data.forEach(function(p,i){
+      var s=sit(selEx,p.valor);var cx=X(ts(p.data)),cy=Y(p.valor);
+      mk("circle",{cx:cx,cy:cy,r:p.data===selDate?6:4,fill:s.c,stroke:"var(--surface)","stroke-width":1.5});
+      if(data.length<=14||i===data.length-1)mk("text",{x:cx,y:cy-10,"text-anchor":"middle",fill:"var(--fg)","font-size":10.5,"font-family":"IBM Plex Mono, monospace"},fmt(p.valor));
+    });
+  }
+
+  var armed=null;
+  function renderTable(){
+    var tb=$("rows");tb.textContent="";
+    var data=src().filter(function(r){return r.exame===selEx}).sort(function(a,b){return a.data<b.data?1:-1});
+    data.forEach(function(p){
+      var tr=document.createElement("tr");
+      var c1=document.createElement("td");c1.className="num";c1.textContent=fdata(p.data);
+      var c2=document.createElement("td");c2.className="num r";c2.textContent=fmt(p.valor)+(EX[selEx].un?" "+EX[selEx].un:"");
+      var s=sit(selEx,p.valor);
+      var c3=document.createElement("td");var ch=document.createElement("span");ch.className="chip";ch.style.setProperty("--c",s.c);ch.textContent=s.t;c3.appendChild(ch);
+      var c4=document.createElement("td");c4.className="r";
+      var b=document.createElement("button");b.type="button";b.className="del";b.textContent="Excluir";
+      var id=p.exame+"_"+p.data;
+      if(armed===id){b.classList.add("sure");b.textContent="Confirmar exclusão"}
+      b.addEventListener("click",function(){
+        if(armed!==id){armed=id;renderTable();return}
+        armed=null;remove(p);
+      });
+      if(!isDemo())c4.appendChild(b);
+      [c1,c2,c3,c4].forEach(function(c){tr.appendChild(c)});tb.appendChild(tr);
+    });
+  }
+
+  function renderForm(){
+    var e=EX[selEx];$("refTxt").textContent=refTxt(selEx);
+    $("valLabel").textContent="Resultado"+(e.un?" ("+e.un+")":"");
+  }
+  function renderAll(){$("demoTag").hidden=!isDemo();renderDates();renderLiver();renderChart();renderTable();renderForm()}
+
+  /* armazenamento */
+  function saveLocal(){try{localStorage.setItem("painel-figado",JSON.stringify(rows));return true}catch(e){return false}}
+  function loadLocal(){try{var s=localStorage.getItem("painel-figado");if(s)rows=JSON.parse(s)}catch(e){}}
+  function msg(t,cls){var m=$("msg");m.textContent=t;m.className="msg "+(cls||"")}
+
+  async function add(row){
+    rows=rows.filter(function(r){return !(r.exame===row.exame&&r.data===row.data)});rows.push(row);
+    return saveLocal();
+  }
+  async function remove(p){rows=rows.filter(function(r){return r!==p});saveLocal();renderAll()}
+
+  $("selEx").addEventListener("change",function(){selEx=this.value;armed=null;renderChart();renderTable();renderForm()});
+  $("selDate").addEventListener("change",function(){selDate=this.value;renderLiver();renderChart()});
+  $("form").addEventListener("submit",async function(ev){
+    ev.preventDefault();
+    var d=$("inDate").value,v=parseFloat($("inVal").value);
+    if(!d){msg("Informe a data da coleta.","err");return}
+    if(!isFinite(v)||v<0){msg("Informe um resultado numérico válido.","err");return}
+    var btn=$("btnSave");btn.disabled=true;
+    var ok=await add({exame:selEx,data:d,valor:v});
+    btn.disabled=false;
+    selDate=d;$("inVal").value="";renderAll();
+    if(ok)msg(EX[selEx].nome+" de "+fdata(d)+" salvo.","good");
+    else msg("Salvo só nesta visita: o navegador bloqueou o armazenamento. Use Exportar cópia.","err");
+  });
+
+  var sx=$("selEx");
+  ORDER.forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=EX[k].nome;if(k===selEx)o.selected=true;sx.appendChild(o)});
+  var t=new Date();$("inDate").value=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+  renderAll();
+
+  $("btnExp").addEventListener("click",function(){
+    try{
+      var blob=new Blob([JSON.stringify({versao:1,exames:rows},null,1)],{type:"application/json"});
+      var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+      a.download="painel-figado-"+$("inDate").value+".json";
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(function(){URL.revokeObjectURL(a.href)},1000);
+      msg("Cópia exportada.","good");
+    }catch(e){msg("Não foi possível exportar neste navegador.","err")}
+  });
+  $("btnImp").addEventListener("click",function(){$("fileImp").click()});
+  $("fileImp").addEventListener("change",function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var j=JSON.parse(rd.result),list=Array.isArray(j)?j:j.exames;
+        var ok=(list||[]).filter(function(r){return r&&EX[r.exame]&&typeof r.valor==="number"&&isFinite(r.valor)&&/^\d{4}-\d{2}-\d{2}$/.test(r.data)});
+        if(!ok.length){msg("O arquivo não tem exames válidos.","err");return}
+        ok.forEach(function(n){rows=rows.filter(function(r){return !(r.exame===n.exame&&r.data===n.data)});rows.push({exame:n.exame,data:n.data,valor:n.valor})});
+        saveLocal();selDate=null;renderAll();msg(ok.length+" resultados importados.","good");
+      }catch(e){msg("Arquivo inválido.","err")}
+    };
+    rd.readAsText(f);this.value="";
+  });
+  loadLocal();renderAll();
+})();
+</script>
+
+</body>
+</html>
